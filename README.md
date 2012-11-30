@@ -1,0 +1,1 @@
+I changed the Process::write() function to writeline() because I was having some issues running the unix command write(). The compiler viewed the unix write() function as the Process::write() function due to the nature of classes. Not sure if we are supposed to use the unix write() function, but this seemed right to me so far.
