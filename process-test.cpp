@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     
 	std::string line;
 	while(getline(std::cin, line)) {
-        p.writeline(line+"\n");
+        p.write(line+"\n");
 	    std::string pread = p.readline();
 	    std::cout << "Line from process[" << p.pid() << "]: " << pread;
 	}

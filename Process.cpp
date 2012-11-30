@@ -7,6 +7,12 @@ Process::Process(const std::vector<std::string> & args) {
         m_pid = fork();
         m_name = args[0];
         const char* name = m_name.c_str();
+        std::string smode = "r";
+        const char* mode = smode.c_str();
+        m_pread = fopen(name, mode);
+
+        if (m_pread == NULL)
+            throw strerror(errno); //throw error in opening the file
 
         std::vector<const char *> cargs;
         std::transform(args.begin(), args.end(), std::back_inserter(cargs),
@@ -39,21 +45,13 @@ Process::Process(const std::vector<std::string> & args) {
             throw strerror(errno); //fork failed somehow throw errno
 
         else {
-            int error = dup2 (writepipe[1], 1); //parent writes to write end so child can read it
+            int error = close(readpipe[1]);
             if (error < 0)
-                throw strerror(errno); //dup2 failed, throw errno
+                throw strerror(errno); //close failed, send error to stderr
 
-            error = close (writepipe[0]); //close read end of the pipe since parent won't be using it
+            error = close(writepipe[0]);
             if (error < 0)
-                throw strerror(errno); //close failed, throw errno
-
-            error = dup2 (readpipe[0], 0); //parent reads from pipe that child is writing to
-            if (error < 0)
-                throw strerror(errno); //dup2 failed, throw errno
-
-            error = close(readpipe[1]);
-            if (error < 0)
-                throw strerror(errno); //close failed, throw errno
+                throw strerror(errno); //close failed, send error to stderr
         }
     }
     catch (const char *err){
@@ -69,12 +67,16 @@ Process::~Process(){
     }
 }
 
-void Process::writeline(const std::string& line) {
-    write(writepipe[1], &line, 100);
+void Process::write(const std::string& line) {
+    int error = ::write(writepipe[1], line.c_str(), 100);
+    if (error < 0)
+        throw strerror(errno); //there was an error in writing
 }
 
 std::string Process::readline() {
-    std::string line;
-    read(readpipe[0], &line, 100);
-    return line;
+    char *line = NULL;
+    int error = getline(&line, NULL, m_pread);
+    if (error < 0)
+        throw strerror(errno); //there was an error in getting a line
+    return std::string(line);
 }

@@ -20,7 +20,7 @@ public:
     virtual ~Process();
     
     /* write a string to the child process */
-    void writeline(const std::string&);
+    void write(const std::string&);
 
     /* read a full line from child process, 
        if no line is available, block until one becomes available */
