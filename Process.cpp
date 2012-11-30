@@ -7,9 +7,8 @@ Process::Process(const std::vector<std::string> & args) {
         m_pid = fork();
         m_name = args[0];
         const char* name = m_name.c_str();
-        std::string smode = "r";
-        const char* mode = smode.c_str();
-        m_pread = fopen(name, mode);
+
+        m_pread = fopen(name, "r");
 
         if (m_pread == NULL)
             throw strerror(errno); //throw error in opening the file
