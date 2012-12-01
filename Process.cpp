@@ -11,7 +11,7 @@ Process::Process(const std::vector<std::string> & args) {
         m_pread = fdopen(readpipe[0], "r");
 
         if (m_pread == NULL)
-            throw strerror(errno); //throw error in opening the file
+            throw std::runtime_error(strerror(errno)); //throw error in opening the file
 
         std::vector<const char *> cargs;
         std::transform(args.begin(), args.end(), std::back_inserter(cargs),
@@ -41,16 +41,16 @@ Process::Process(const std::vector<std::string> & args) {
         }
 
         else if(m_pid < 0)
-            throw strerror(errno); //fork failed somehow throw errno
+            throw std::runtime_error(strerror(errno)); //fork failed somehow throw errno
 
         else {
             int error = close(readpipe[1]);
             if (error < 0)
-                throw strerror(errno); //close failed, send error to stderr
+                throw std::runtime_error(strerror(errno)); //close failed, send error to stderr
 
             error = close(writepipe[0]);
             if (error < 0)
-                throw strerror(errno); //close failed, send error to stderr
+                throw std::runtime_error(strerror(errno)); //close failed, send error to stderr
         }
     }
     catch (const char *err){
@@ -67,15 +67,16 @@ Process::~Process(){
 }
 
 void Process::write(const std::string& line) {
-    int error = ::write(writepipe[1], line.c_str(), 100);
+    int error = ::write(writepipe[1], line.c_str(), strlen(line.c_str()));
     if (error < 0)
-        throw strerror(errno); //there was an error in writing
+        throw std::runtime_error(strerror(errno)); //there was an error in writing
 }
 
 std::string Process::readline() {
     char *line = NULL;
-    int error = getline(&line, NULL, m_pread);
+    size_t buffer[100];
+    int error = getline(&line, buffer, m_pread);
     if (error < 0)
-        throw strerror(errno); //there was an error in getting a line
+        throw std::runtime_error(strerror(errno)); //there was an error in getting a line
     return std::string(line);
 }
