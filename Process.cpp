@@ -8,7 +8,7 @@ Process::Process(const std::vector<std::string> & args) {
         m_name = args[0];
         const char* name = m_name.c_str();
 
-        m_pread = fopen(name, "r");
+        m_pread = fdopen(readpipe[0], "r");
 
         if (m_pread == NULL)
             throw strerror(errno); //throw error in opening the file
