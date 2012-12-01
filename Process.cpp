@@ -2,6 +2,7 @@
 
 Process::Process(const std::vector<std::string> & args) {
     try {
+        std::cout << "Parent [" << getpid() << "] Process constructor\n";
         pipe(readpipe); //parents read pipe child writes to
         pipe(writepipe); //parents write pipe child reads from
         m_pid = fork();
@@ -27,11 +28,19 @@ Process::Process(const std::vector<std::string> & args) {
             if (error < 0)
                 std::cerr << strerror(errno); //close failed, send error to stderr
 
+            error = close (readpipe[1]); //close other end of readpipe since it has been duplicated
+            if (error < 0)
+                std::cerr << strerror(errno); //close failed, send error to stderr
+
             error = dup2 (writepipe[0],0); //child reads from pipe that parent writes to
             if (error < 0)
                 std::cerr << strerror(errno); //dup2 failed, send error to stderr
 
             error = close (writepipe[1]);
+            if (error < 0)
+                std::cerr << strerror(errno); //close failed, send error to stderr
+
+            error = close (writepipe[0]); //close other end of readpipe since it has been duplicated
             if (error < 0)
                 std::cerr << strerror(errno); //close failed, send error to stderr
 
@@ -46,11 +55,13 @@ Process::Process(const std::vector<std::string> & args) {
         else {
             int error = close(readpipe[1]);
             if (error < 0)
-                throw std::runtime_error(strerror(errno)); //close failed, send error to stderr
+                throw std::runtime_error(strerror(errno)); //close failed, throw errno
 
             error = close(writepipe[0]);
             if (error < 0)
-                throw std::runtime_error(strerror(errno)); //close failed, send error to stderr
+                throw std::runtime_error(strerror(errno)); //close failed, throw errno
+
+
         }
     }
     catch (const char *err){
@@ -59,11 +70,10 @@ Process::Process(const std::vector<std::string> & args) {
 }
 
 Process::~Process(){
-    if (m_pid ==0) {
-        close (readpipe[1]); //close file discriptors upon destruction
-        close (writepipe[0]);
-        kill(m_pid, SIGTERM); //make sure the child pid has been terminated
-    }
+    close (readpipe[0]); //close remaining file discriptors upon destruction
+    close (writepipe[1]);
+    kill(m_pid, SIGTERM);
+    waitpid(m_pid, NULL, 0); //wait on child process to finish
 }
 
 void Process::write(const std::string& line) {
